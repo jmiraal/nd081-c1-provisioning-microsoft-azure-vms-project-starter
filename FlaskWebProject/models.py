@@ -48,7 +48,7 @@ class Post(db.Model):
 
     def save_changes(self, form, file, userId, new=False):
         self.title = form.title.data
-        self.subtitle = form.title.data
+        self.subtitle = form.subtitle.data
         self.author = form.author.data
         self.body = form.body.data
         self.user_id = userId

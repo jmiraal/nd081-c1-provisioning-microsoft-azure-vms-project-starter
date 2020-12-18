@@ -43,6 +43,12 @@ def new_post():
         form=form
     )
 
+@app.route('/delete_post/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+def delete_post(post_id):
+    Post.query.filter_by(id=post_id).delete()
+    db.session.commit()
+    return redirect(url_for('home'))
 
 @app.route('/post/<int:id>', methods=['GET', 'POST'])
 @login_required
