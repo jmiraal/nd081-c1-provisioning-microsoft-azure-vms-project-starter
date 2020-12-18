@@ -13,6 +13,13 @@
                 <span style="color: red;">[{{ error }}]</span>
                 {% endfor %}
             </p>
+			<p>
+                {{ form.subtitle.label }}<br>
+                {{ form.subtitle(size=64) }}
+                {% for error in form.subtitle.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
             <p>
                 {{ form.author.label }}<br>
                 {{ form.author(size=32) }}
