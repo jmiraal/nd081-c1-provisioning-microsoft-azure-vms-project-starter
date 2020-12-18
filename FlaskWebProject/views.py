@@ -15,6 +15,7 @@ import uuid
 
 imageSourceUrl = 'https://'+ app.config['BLOB_ACCOUNT']  + '.blob.core.windows.net/' + app.config['BLOB_CONTAINER']  + '/'
 
+
 @app.route('/')
 @app.route('/home')
 @login_required
@@ -63,9 +64,9 @@ def login():
     if current_user.is_authenticated:
         now = datetime.now()
         ts = now.strftime("%d/%b/%Y %H:%M:%S")
-        app.logger.info('{} - - [{}] "INFO: User Already Authenticated. USER: {}"'.format(request.remote_addr, 
-                                                                                          ts, 
-                                                                                          current_user))
+        app.logger.info('{} - - [{}] LOGIN_INFO: User Already Authenticated. USER: {}'.format(request.remote_addr, 
+                                                                                              ts, 
+                                                                                              current_user))
         return redirect(url_for('home'))
     form = LoginForm()
     if form.validate_on_submit():
@@ -74,9 +75,9 @@ def login():
             flash('Invalid username or password')
             now = datetime.now()
             ts = now.strftime("%d/%b/%Y %H:%M:%S")
-            app.logger.info('{} - - [{}] "INFO: Invalid username or password. USER: {}"'.format(request.remote_addr, 
-                                                                                                ts, 
-                                                                                                form.username.data))
+            app.logger.info('{} - - [{}] LOGIN_INFO: Invalid username or password. USER: {}'.format(request.remote_addr, 
+                                                                                                    ts, 
+                                                                                                    form.username.data))
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
@@ -84,9 +85,9 @@ def login():
             next_page = url_for('home')
         now = datetime.now()
         ts = now.strftime("%d/%b/%Y %H:%M:%S")
-        app.logger.info('{} - - [{}] "INFO: Login Successful. USER: {}"'.format(request.remote_addr, 
-                                                                                ts, 
-                                                                                form.username.data))
+        app.logger.info('{} - - [{}] LOGIN_INFO: Login Successful. USER: {}'.format(request.remote_addr, 
+                                                                                    ts, 
+                                                                                    form.username.data))
         return redirect(next_page)
     session["state"] = str(uuid.uuid4())
     print(session["state"])
@@ -100,9 +101,9 @@ def authorized():
     if "error" in request.args:  # Authentication/Authorization failure
         now = datetime.now()
         ts = now.strftime("%d/%b/%Y %H:%M:%S")
-        app.logger.info('{} - - [{}] "INFO: Authentication/Authorization Failure. USER: {}"'.format(request.remote_addr, 
-                                                                                                    ts, 
-                                                                                                    session["user"]["name"]))
+        app.logger.info('{} - - [{}] LOGIN_INFO: Authentication/Authorization Failure. USER: {}'.format(request.remote_addr, 
+                                                                                                        ts, 
+                                                                                                        session["user"]["name"]))
         return render_template("auth_error.html", result=request.args)
     if request.args.get('code'):
         cache = _load_cache()
@@ -115,9 +116,9 @@ def authorized():
         if "error" in result:
             now = datetime.now()
             ts = now.strftime("%d/%b/%Y %H:%M:%S")
-            app.logger.info('{} - - [{}] "INFO: Authorization Failure. USER: {}"'.format(request.remote_addr,
-                                                                                         ts, 
-                                                                                         session["user"]["name"]))
+            app.logger.info('{} - - [{}] LOGIN_INFO: Authorization Failure. USER: {}'.format(request.remote_addr,
+                                                                                             ts, 
+                                                                                             session["user"]["name"]))
             return render_template("auth_error.html", result=result)
         session["user"] = result.get("id_token_claims")
         # Note: In a real app, we'd use the 'name' property from session["user"] below
@@ -128,9 +129,9 @@ def authorized():
     # send log with login successful mesage
     now = datetime.now()
     ts = now.strftime("%d/%b/%Y %H:%M:%S")
-    app.logger.info('{} - - [{}] "INFO: Login Successful. USER: {}"'.format(request.remote_addr,
-                                                                            ts, 
-                                                                            session["user"]["preferred_username"]))
+    app.logger.info('{} - - [{}] LOGIN_INFO: Login Successful. USER: {}'.format(request.remote_addr,
+                                                                                ts, 
+                                                                                session["user"]["preferred_username"]))
     return redirect(url_for('home'))
 
 @app.route('/logout')
