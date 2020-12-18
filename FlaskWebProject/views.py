@@ -61,17 +61,32 @@ def post(id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
+        now = datetime.now()
+        ts = now.strftime("%d/%b/%Y %H:%M:%S")
+        app.logger.info('{} - - [{}] "INFO: User Already Authenticated. USER: {}"'.format(request.remote_addr, 
+                                                                                          ts, 
+                                                                                          current_user))
         return redirect(url_for('home'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
+            now = datetime.now()
+            ts = now.strftime("%d/%b/%Y %H:%M:%S")
+            app.logger.info('{} - - [{}] "INFO: Invalid username or password. USER: {}"'.format(request.remote_addr, 
+                                                                                                ts, 
+                                                                                                form.username.data))
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('home')
+        now = datetime.now()
+        ts = now.strftime("%d/%b/%Y %H:%M:%S")
+        app.logger.info('{} - - [{}] "INFO: Login Successful. USER: {}"'.format(request.remote_addr, 
+                                                                                ts, 
+                                                                                form.username.data))
         return redirect(next_page)
     session["state"] = str(uuid.uuid4())
     print(session["state"])
@@ -80,9 +95,14 @@ def login():
 
 @app.route(Config.REDIRECT_PATH)  # Its absolute URL must match your app's redirect_uri set in AAD
 def authorized():
-    if request.args.get('state') != session.get("state"):
+    if request.args.get('state') != session.get("state"):    
         return redirect(url_for("home"))  # No-OP. Goes back to Index page
     if "error" in request.args:  # Authentication/Authorization failure
+        now = datetime.now()
+        ts = now.strftime("%d/%b/%Y %H:%M:%S")
+        app.logger.info('{} - - [{}] "INFO: Authentication/Authorization Failure. USER: {}"'.format(request.remote_addr, 
+                                                                                                    ts, 
+                                                                                                    session["user"]["name"]))
         return render_template("auth_error.html", result=request.args)
     if request.args.get('code'):
         cache = _load_cache()
@@ -93,6 +113,11 @@ def authorized():
             scopes=Config.SCOPE,
             redirect_uri=url_for('authorized', _external=True, _scheme='https'))
         if "error" in result:
+            now = datetime.now()
+            ts = now.strftime("%d/%b/%Y %H:%M:%S")
+            app.logger.info('{} - - [{}] "INFO: Authorization Failure. USER: {}"'.format(request.remote_addr,
+                                                                                         ts, 
+                                                                                         session["user"]["name"]))
             return render_template("auth_error.html", result=result)
         session["user"] = result.get("id_token_claims")
         # Note: In a real app, we'd use the 'name' property from session["user"] below
@@ -100,6 +125,12 @@ def authorized():
         user = User.query.filter_by(username="admin").first()
         login_user(user)
         _save_cache(cache)
+    # send log with login successful mesage
+    now = datetime.now()
+    ts = now.strftime("%d/%b/%Y %H:%M:%S")
+    app.logger.info('{} - - [{}] "INFO: Login Successful. USER: {}"'.format(request.remote_addr,
+                                                                            ts, 
+                                                                            session["user"]["preferred_username"]))
     return redirect(url_for('home'))
 
 @app.route('/logout')
@@ -129,13 +160,19 @@ def _save_cache(cache):
 
 def _build_msal_app(cache=None, authority=None):
     # TODO: Return a ConfidentialClientApplication
-    return msal.ConfidentialClientApplication( \
-        Config.CLIENT_ID, authority=authority or Config.AUTHORITY,
-        client_credential=Config.CLIENT_SECRET, token_cache=cache)
+    conf_client = msal.ConfidentialClientApplication( \
+                       Config.CLIENT_ID, authority=authority or Config.AUTHORITY,
+                       client_credential=Config.CLIENT_SECRET, token_cache=cache)
+    #app.logger.info('INFO: CONF_CLIENT: {}'.format(conf_client))
+    return conf_client
 
 def _build_auth_url(authority=None, scopes=None, state=None):
     # TODO: Return the full Auth Request URL with appropriate Redirect URI
-    return _build_msal_app(authority=authority).get_authorization_request_url( \
-        scopes or [],
-        state=state or str(uuid.uuid4()),
-        redirect_uri=url_for('authorized', _external=True, _scheme='https'))
+    msal_app = _build_msal_app(authority=authority).get_authorization_request_url( \
+                               scopes or [],
+                               state=state or str(uuid.uuid4()),
+                               redirect_uri=url_for('authorized', 
+                                                    _external=True,
+                                                    _scheme='https'))
+    #app.logger.info('INFO: MSAL_APP: {}'.format(msal_app))
+    return msal_app
