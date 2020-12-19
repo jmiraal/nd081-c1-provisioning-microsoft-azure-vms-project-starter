@@ -71,6 +71,7 @@ def post(id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
+        # print log with User Already Authenticated
         now = datetime.now()
         ts = now.strftime("%d/%b/%Y %H:%M:%S")
         app.logger.info('{} - - [{}] LOGIN_INFO: User Already Authenticated. USER: {}'.format(request.remote_addr, 
@@ -92,6 +93,7 @@ def login():
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('home')
+        # print log with Login Successful
         now = datetime.now()
         ts = now.strftime("%d/%b/%Y %H:%M:%S")
         app.logger.info('{} - - [{}] LOGIN_INFO: Login Successful. USER: {}'.format(request.remote_addr, 
@@ -108,6 +110,7 @@ def authorized():
     if request.args.get('state') != session.get("state"):    
         return redirect(url_for("home"))  # No-OP. Goes back to Index page
     if "error" in request.args:  # Authentication/Authorization failure
+        # print log with Authentication/Authorization Failure
         now = datetime.now()
         ts = now.strftime("%d/%b/%Y %H:%M:%S")
         app.logger.info('{} - - [{}] LOGIN_INFO: Authentication/Authorization Failure. USER: {}'.format(request.remote_addr, 
@@ -123,6 +126,7 @@ def authorized():
             scopes=Config.SCOPE,
             redirect_uri=url_for('authorized', _external=True, _scheme='https'))
         if "error" in result:
+            # print log with Authorization Failure
             now = datetime.now()
             ts = now.strftime("%d/%b/%Y %H:%M:%S")
             app.logger.info('{} - - [{}] LOGIN_INFO: Authorization Failure. USER: {}'.format(request.remote_addr,
@@ -135,7 +139,7 @@ def authorized():
         user = User.query.filter_by(username="admin").first()
         login_user(user)
         _save_cache(cache)
-    # send log with login successful mesage
+    # print log with login successful mesage
     now = datetime.now()
     ts = now.strftime("%d/%b/%Y %H:%M:%S")
     app.logger.info('{} - - [{}] LOGIN_INFO: Login Successful. USER: {}'.format(request.remote_addr,
@@ -184,5 +188,4 @@ def _build_auth_url(authority=None, scopes=None, state=None):
                                redirect_uri=url_for('authorized', 
                                                     _external=True,
                                                     _scheme='https'))
-    #app.logger.info('INFO: MSAL_APP: {}'.format(msal_app))
     return msal_app
