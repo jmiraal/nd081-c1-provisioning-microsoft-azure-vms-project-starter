@@ -7,7 +7,7 @@ from flask import render_template, flash, redirect, request, session, url_for
 from werkzeug.urls import url_parse
 from config import Config
 from FlaskWebProject import app, db
-from FlaskWebProject.forms import LoginForm, PostForm
+from FlaskWebProject.forms import LoginForm, PostFormNew, PostFormEdit
 from flask_login import current_user, login_user, logout_user, login_required
 from FlaskWebProject.models import User, Post
 import msal
@@ -31,10 +31,10 @@ def home():
 @app.route('/new_post', methods=['GET', 'POST'])
 @login_required
 def new_post():
-    form = PostForm(request.form)
+    form = PostFormNew(request.form)
     if form.validate_on_submit():
         post = Post()
-        post.save_changes(form, request.files['image_path'], current_user.id, new=True)
+        post.save_changes(form, request.files['image_path'], False, current_user.id, new=True)
         return redirect(url_for('home'))
     return render_template(
         'post.html',
@@ -47,7 +47,6 @@ def new_post():
 @login_required
 def delete_post(post_id):
     post = Post.query.get(int(post_id))
-    app.logger.info(post.__repr__())
     post.delete_post()
     return redirect(url_for('home'))
 
@@ -55,9 +54,12 @@ def delete_post(post_id):
 @login_required
 def post(id):
     post = Post.query.get(int(id))
-    form = PostForm(formdata=request.form, obj=post)
+    form = PostFormEdit(formdata=request.form, obj=post)
     if form.validate_on_submit():
-        post.save_changes(form, request.files['image_path'], current_user.id)
+        if form.delete_image:
+            post.save_changes(form, request.files['image_path'], form.delete_image.data, current_user.id)
+        else:
+            post.save_changes(form, request.files['image_path'], False, current_user.id)
         return redirect(url_for('home'))
     return render_template(
         'post.html',

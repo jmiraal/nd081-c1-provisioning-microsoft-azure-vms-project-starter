@@ -42,7 +42,11 @@
             {% endif %}
             <p>
                 {{ form.image_path.label }}<br>
-                {{ form.image_path }}
+                {{ form.image_path }}<br>
+				{% if form.delete_image and form.image_path.data %}
+				    {{ form.delete_image }}
+                    {{ form.delete_image.label }}<br>
+			    {% endif %}
                 {% for error in form.image_path.errors %}
                 <span style="color: red;">{{ error.join(form.image_path.errors) }}</span>
                 {% endfor %}
